@@ -17,6 +17,7 @@ public class NotebookActivity extends BaseActivity {
     // เมธอดที่ 1: สั่งการทำงานหลักเมื่อสร้างหน้าจอ
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notebook);
 
