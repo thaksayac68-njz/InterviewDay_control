@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.widget.ImageButton;
 import com.example.interviewday.R;
 
+import com.example.interviewday.dialogs.SettingsDialog;
+
 public class MainMenuActivity extends BaseActivity {
 
     //ATTRIBUTES
@@ -54,9 +56,10 @@ public class MainMenuActivity extends BaseActivity {
             startActivity(intent);
         });
 
-        // กดปุ่มตั้งค่า -> เปิดป๊อปอัพหรือไปหน้าตั้งค่า
+        // กดปุ่มตั้งค่า -> เปิดป๊อปอัพตั้งค่า
         btnSettings.setOnClickListener(v -> {
-            // พร้อมเชื่อมต่อ Dialog/Activity ตั้งค่าเมื่อสร้างไฟล์เสร็จ
+            SettingsDialog settingsDialog = SettingsDialog.newInstance();
+            settingsDialog.show(getSupportFragmentManager(), "SettingsDialog");
         });
     }
 }

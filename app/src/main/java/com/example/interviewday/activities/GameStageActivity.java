@@ -1,5 +1,6 @@
 package com.example.interviewday.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
@@ -8,6 +9,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import com.example.interviewday.R;
+import com.example.interviewday.dialogs.GimmickDialog;
+import com.example.interviewday.dialogs.PauseDialog;
+import com.example.interviewday.dialogs.SettingsDialog;
 
 public class GameStageActivity extends BaseActivity {
 
@@ -154,6 +158,40 @@ public class GameStageActivity extends BaseActivity {
     }
 
     private void setupItemClickListeners() {
+        btnPause.setOnClickListener(v -> {
+            PauseDialog dialog = PauseDialog.newInstance(tvTimer.getText().toString());
+            dialog.setListener(new PauseDialog.PauseDialogListener() {
+                @Override
+                public void onContinueClicked() {}
+
+                @Override
+                public void onOpenSettingsClicked() {
+                    SettingsDialog settingsDialog = SettingsDialog.newInstance();
+                    settingsDialog.show(getSupportFragmentManager(), "SettingsDialog");
+                }
+
+                @Override
+                public void onHomeClicked() {
+                    Intent intent = new Intent(GameStageActivity.this, MainMenuActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                    finish();
+                }
+
+                @Override
+                public void onRestartClicked() {
+                    recreate();
+                }
+            });
+            dialog.show(getSupportFragmentManager(), "PauseDialog");
+        });
+
+        btnNext.setOnClickListener(v -> {
+            GimmickDialog dialog = new GimmickDialog();
+            dialog.setStageAndQuestion(currentStage, 0);
+            dialog.show(getSupportFragmentManager(), "GimmickDialog");
+        });
+
         // 1. ไอเท็มธรรมดา ชิ้นที่ 1
         imgHiddenItem1.setOnClickListener(v -> {
             imgHiddenItem1.setVisibility(View.GONE);
