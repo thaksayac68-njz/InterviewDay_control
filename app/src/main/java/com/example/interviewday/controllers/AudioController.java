@@ -1,9 +1,14 @@
 package com.example.interviewday.controllers;
 
+import android.content.Context;
+import android.media.MediaPlayer;
+
 public class AudioController {
     // --Attributes--
     private float volume;//— ระดับความดังเสียง (ค่าระหว่าง 0.0f ถึง 1.0f)
     private boolean isMuted;// — สถานะเปิด/ปิดเสียง (true/false)
+    private MediaPlayer mediaPlayer; // ตัวจัดการเล่นเสียง
+
 
     // --Constructor--
     public AudioController(){
@@ -13,9 +18,34 @@ public class AudioController {
 
     // --Methods--
     //1.playSentenceAudio() — เล่นเสียงอ่านประโยคภาษาอังกฤษ
-    public void playSentenceAudio(){
+    // เล่นเสียงอ่านประโยคเมื่อกดปุ่ม
+    public void playSentenceAudio(Context context, int soundResId) {
         if (isMuted) return;
-        // โค้ดสำหรับเล่นเสียงประโยคภาษาอังกฤษ
+
+        // หยุดเสียงเดิมที่กำลังเล่นอยู่ก่อนหน้า
+        stopAudio();
+
+        // สร้าง MediaPlayer ตัวใหม่และเริ่มเล่นเสียงทันที
+        mediaPlayer = MediaPlayer.create(context, soundResId);
+        if (mediaPlayer != null) {
+            mediaPlayer.setVolume(volume, volume);
+            mediaPlayer.start();
+
+            // คืนหน่วยความจำเมื่อเล่นเสียงจบ
+            mediaPlayer.setOnCompletionListener(mp -> stopAudio());
+        }
+    }
+    // ฟังก์ชันสำหรับหยุดเล่นเสียง
+
+    // ฟังก์ชันสำหรับหยุดเสียง
+    public void stopAudio() {
+        if (mediaPlayer != null) {
+            if (mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
     //2.playCorrectSound() — เล่นเสียงเอฟเฟกต์ตอบถูก
     public void playCorrectSound(){

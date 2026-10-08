@@ -12,8 +12,12 @@ import com.example.interviewday.R;
 import com.example.interviewday.dialogs.GimmickDialog;
 import com.example.interviewday.dialogs.PauseDialog;
 import com.example.interviewday.dialogs.SettingsDialog;
+import com.example.interviewday.controllers.TimerController;//เพิ่มเติมคุมเวลา
 
 public class GameStageActivity extends BaseActivity {
+
+    //Time
+    private TimerController timerController;
 
     // UI Views
     private ImageView imgBackground;
@@ -55,6 +59,8 @@ public class GameStageActivity extends BaseActivity {
         initViews();
         setupStageUI(currentStage);
         setupItemClickListeners();
+
+        setupTimer(); //  เพิ่มบรรทัดนี้เพื่อเปิดใช้งานตัวจับเวลา
     }
 
     private void initViews() {
@@ -155,6 +161,49 @@ public class GameStageActivity extends BaseActivity {
         imgHiddenItem2.setImageResource(colorRes2);
         imgHiddenItem3.setImageResource(colorRes3);
         imgSecretItem.setImageResource(secretRes);
+    }
+
+    //เพิ่มเติมการจับเวลา
+    private void setupTimer() {
+        // สร้าง TimerController และ override อัปเดตเวลาบนตัวหนังสือ tvTimer
+        timerController = new TimerController() {
+            @Override
+            public void updateTimer() {
+                super.updateTimer();
+                // นำเวลาที่เหลือมาแปลงเป็นข้อความ MM:SS (เช่น 06:00) แสดงบน UI
+                runOnUiThread(() -> {
+                    if (tvTimer != null) {
+                        tvTimer.setText(getFormattedTime());
+                    }
+                });
+            }
+        };
+
+        // เริ่มนับเวลาถอยหลังทันทีที่เข้าด่าน!
+        timerController.startTimer();
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (timerController != null) {
+            timerController.pauseTimer();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (timerController != null) {
+            timerController.resumeTimer();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (timerController != null) {
+            timerController.stopTimer();
+        }
     }
 
     private void setupItemClickListeners() {

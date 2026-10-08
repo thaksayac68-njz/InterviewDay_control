@@ -1,6 +1,9 @@
 package com.example.interviewday.dialogs;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,10 +11,18 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import com.example.interviewday.R;
+import com.example.interviewday.controllers.AudioController;
+import com.example.interviewday.controllers.PronunciationController;
+
+import java.util.ArrayList;
 
 public class GimmickDialog extends BaseDialog {
 
@@ -35,6 +46,23 @@ public class GimmickDialog extends BaseDialog {
             "ด่านที่ 2: อ่านโจทย์ แล้วกดปุ่มพูดตอบคำถามให้ถูกต้อง",
             "ด่านที่ 3: ดูข้อมูลสมุดโน้ตทางขวา แล้วพูดสรุปคำตอบ"
     };
+
+    //เพิ่มเติม
+    private PronunciationController pronunciationController;
+
+    // ตัวรับเสียงพูด วางใน GimmickDialog
+    private final ActivityResultLauncher<Intent> speechLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                    ArrayList<String> matches = result.getData().getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    if (matches != null && !matches.isEmpty()) {
+                        String spokenText = matches.get(0);
+                        onSpeechResult(spokenText); // โชว์ข้อความคำตอบที่พูดออกมา
+                    }
+                }
+            }
+    );
 
     @Nullable
     @Override
@@ -66,6 +94,10 @@ public class GimmickDialog extends BaseDialog {
         if (btnListen != null) {
             btnListen.setOnClickListener(v -> {
                 // TODO: เรียกฟังก์ชันเล่นเสียงอ่านโจทย์ (Text-to-Speech)
+                AudioController audioController = new AudioController();
+                // สั่งเล่นเสียงโจทย์อ่านภาษาอังกฤษ
+                audioController.playSentenceAudio(getContext(), R.raw.level1_1);
+
             });
         }
 
@@ -73,6 +105,12 @@ public class GimmickDialog extends BaseDialog {
         if (btnSpeak != null) {
             btnSpeak.setOnClickListener(v -> {
                 // TODO: เรียกใช้ Speech-to-Text
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US");
+                intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Please pronounce the English sentence....");
+
+                speechLauncher.launch(intent);
             });
         }
 
@@ -132,21 +170,50 @@ public class GimmickDialog extends BaseDialog {
         }
     }
 
-    // 4. เรียกฟังก์ชันนี้เมื่อผู้เล่นพูดตอบเสร็จแล้ว เพื่อโชว์คำตอบและปุ่มถัดไป
+    // 4. เรียกฟังก์ชันนี้เมื่อผู้เล่นพูดตอบเสร็จแล้ว เพื่อโชว์คำตอบและตรวจเช็กว่าถูกต้องหรือไม่
     public void onSpeechResult(String recognizedText) {
+        // แสดงข้อความที่ผู้เล่นพูดออกบนหน้าจอ
         if (tvPlayerAnswer != null) {
             tvPlayerAnswer.setText(recognizedText);
         }
 
-        // แสดงปุ่มถัดไปตามข้อที่เล่น
-        if (currentQuestion == 2) {
-            // หากเป็นข้อ 3 ให้โชว์ปุ่มถัดไปนอกการ์ด
-            if (btnNextOutside != null) btnNextOutside.setVisibility(View.VISIBLE);
-            if (btnNextInside != null) btnNextInside.setVisibility(View.GONE);
+        // 1. สร้างสร้าง PronunciationController หากยังไม่มี
+        if (pronunciationController == null) {
+            pronunciationController = new PronunciationController();
+        }
+
+        // 2. กำหนดคำตอบโจทย์ประจำด่านที่ 1 ข้อที่ 1
+        String targetWord = "Encapsulation";
+        if (currentStage == 1 && currentQuestion == 0) {
+            targetWord = "Encapsulation";
+        }
+
+        pronunciationController.setTargetSentence(targetWord);
+        pronunciationController.recognizeSpeech(recognizedText);
+
+        // 3. ตรวจสอบว่าผู้เล่นพูดคำว่า "Encapsulation" ถูกต้องหรือไม่
+        boolean isCorrect = pronunciationController.compareSentence();
+
+        if (isCorrect) {
+            //  ถ้าพูดถูกต้อง ให้แสดง Toast และปลดล็อกปุ่ม "ถัดไป"
+            if (getContext() != null) {
+                Toast.makeText(getContext(), " Well done! That's the correct answer.10 (" + recognizedText + ")", Toast.LENGTH_SHORT).show();
+            }
+
+            // แสดงปุ่มถัดไปตามข้อที่เล่น
+            if (currentQuestion == 2) {
+                if (btnNextOutside != null) btnNextOutside.setVisibility(View.VISIBLE);
+                if (btnNextInside != null) btnNextInside.setVisibility(View.GONE);
+            } else {
+                if (btnNextInside != null) btnNextInside.setVisibility(View.VISIBLE);
+                if (btnNextOutside != null) btnNextOutside.setVisibility(View.GONE);
+            }
+
         } else {
-            // หากเป็นข้อ 1 หรือ 2 ให้โชว์ปุ่มถัดไปในกล่องคำตอบ
-            if (btnNextInside != null) btnNextInside.setVisibility(View.VISIBLE);
-            if (btnNextOutside != null) btnNextOutside.setVisibility(View.GONE);
+            // ❌ ถ้าพูดไม่ถูก ให้แจ้งเตือนผู้เล่นลองใหม่อีกครั้ง
+            if (getContext() != null) {
+                Toast.makeText(getContext(), "That's still not correct. Try saying the word... \"" + targetWord + "\" Try Again", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
